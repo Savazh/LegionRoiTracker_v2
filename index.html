@@ -7,13 +7,16 @@
     <title>LegionRoiTracker</title>
     <!-- Start Single Page Apps for GitHub Pages -->
     <script type="text/javascript">
+      // Single Page Apps for GitHub Pages
+      // MIT License
+      // https://github.com/rafgraph/spa-github-pages
       (function(l) {
         if (l.search[1] === 'p') {
           var decoded = l.search.slice(1).split('&').map(function(s) { 
             return s.replace(/~and~/g, '&')
           }).join('?');
           window.history.replaceState(null, null,
-            l.pathname.slice(0, -1) + decoded.split('?')[0] + (decoded.split('?')[1] ? '?' + decoded.split('?')[1] : '')
+              l.pathname.slice(0, -1) + decoded + l.hash
           );
         }
       }(window.location))
@@ -22,10 +25,12 @@
     <!-- Preconnect to TradingView domains -->
     <link rel="preconnect" href="https://s3.tradingview.com" />
     <link rel="preconnect" href="https://www.tradingview.com" />
-    <script type="module" crossorigin src="/token/fuel-network/assets/index-_8KJVLTu.js"></script>
-    <link rel="modulepreload" crossorigin href="/token/fuel-network/assets/vendor-oc-caUeM.js">
-    <link rel="modulepreload" crossorigin href="/token/fuel-network/assets/charts-D5sc3Fpd.js">
-    <link rel="stylesheet" crossorigin href="/token/fuel-network/assets/index-1gg7SaYr.css">
+    <!-- Add base URL for assets -->
+    <base href="/" />
+    <script type="module" crossorigin src="./assets/index-DP5px3x8.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/vendor-oc-caUeM.js">
+    <link rel="modulepreload" crossorigin href="./assets/charts-D5sc3Fpd.js">
+    <link rel="stylesheet" crossorigin href="./assets/index-1gg7SaYr.css">
   </head>
   <body>
     <div id="root"></div>
