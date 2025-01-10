@@ -1,0 +1,31 @@
+# Enable rewrite engine
+RewriteEngine On
+
+# If the request is not for a file that exists
+RewriteCond %{REQUEST_FILENAME} !-f
+# If the request is not for a directory that exists
+RewriteCond %{REQUEST_FILENAME} !-d
+# Rewrite all requests to index.html
+RewriteRule ^ index.html [L]
+
+# Enable CORS
+Header set Access-Control-Allow-Origin "*"
+Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+Header set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept"
+
+# Security headers
+Header set X-Content-Type-Options "nosniff"
+Header set X-Frame-Options "SAMEORIGIN"
+Header set X-XSS-Protection "1; mode=block"
+Header set Referrer-Policy "strict-origin-when-cross-origin"
+
+# Cache control for static assets
+<FilesMatch "\.(css|js|jpg|jpeg|png|gif|ico|svg|woff2?|ttf|eot)$">
+    Header set Cache-Control "max-age=31536000, public"
+</FilesMatch>
+
+# Disable directory listing
+Options -Indexes
+
+# Handle errors
+ErrorDocument 404 /index.html
