@@ -7,16 +7,13 @@
     <title>LegionRoiTracker</title>
     <!-- Start Single Page Apps for GitHub Pages -->
     <script type="text/javascript">
-      // Single Page Apps for GitHub Pages
-      // MIT License
-      // https://github.com/rafgraph/spa-github-pages
       (function(l) {
         if (l.search[1] === 'p') {
           var decoded = l.search.slice(1).split('&').map(function(s) { 
             return s.replace(/~and~/g, '&')
           }).join('?');
           window.history.replaceState(null, null,
-              l.pathname.slice(0, -1) + decoded + l.hash
+            l.pathname.slice(0, -1) + decoded.split('?')[0] + (decoded.split('?')[1] ? '?' + decoded.split('?')[1] : '')
           );
         }
       }(window.location))
@@ -25,8 +22,6 @@
     <!-- Preconnect to TradingView domains -->
     <link rel="preconnect" href="https://s3.tradingview.com" />
     <link rel="preconnect" href="https://www.tradingview.com" />
-    <!-- Add base URL for assets -->
-    <base href="/" />
   </head>
   <body>
     <div id="root"></div>
