@@ -55,7 +55,10 @@ export async function fetchTokenPrice(): Promise<TokenPrice> {
     if (data?.result?.list?.[0]?.lastPrice) {
       const price = parseFloat(data.result.list[0].lastPrice);
       if (isNaN(price) || price <= 0) {
-        throw new Error('Invalid price value received');
+        console.warn('Invalid price received, using fallback');
+        return {
+          'fuel-network': { usd: lastValidPrice ?? FALLBACK_PRICE }
+        };
       }
       lastValidPrice = price;
       const result = { 'fuel-network': { usd: price } };
@@ -68,7 +71,10 @@ export async function fetchTokenPrice(): Promise<TokenPrice> {
       return result;
     }
     
-    throw new Error('Invalid response format');
+    console.warn('Invalid response format, using fallback');
+    return {
+      'fuel-network': { usd: lastValidPrice ?? FALLBACK_PRICE }
+    };
   } catch (error) {
     console.error('Error fetching price data:', error);
     return {
@@ -79,7 +85,7 @@ export async function fetchTokenPrice(): Promise<TokenPrice> {
 
 export async function fetchCandlestickData(
   interval: string = '240',
-  limit: number = 200 // Reduced limit for better performance
+  limit: number = 200
 ): Promise<CandlestickData[]> {
   const cacheKey = `candlestick-${interval}`;
   const now = Date.now();

@@ -23,108 +23,91 @@ export function TokenDetails() {
   const checkAlerts = useAlertStore((state) => state.checkAlerts);
 
   const token = tokens.find(t => t.id === id);
-  const currentPrice = details?.market_data.current_price.usd || null;
 
   useEffect(() => {
-    // Add console logs for debugging
-    console.log('TokenDetails mounted', { id, token });
-
     if (!token) {
-      console.log('Token not found, navigating to home');
       navigate('/');
       return;
     }
 
+    let mounted = true;
+    let intervalId: NodeJS.Timeout;
+
     const fetchDetails = async () => {
-      if (token.status !== 'live') {
+      if (!mounted || token.status !== 'live') {
         setLoading(false);
         return;
       }
       
       try {
         setError(null);
-        console.log('Fetching price data for', token.id);
         const priceData = await fetchTokenPrice();
-        console.log('Received price data', priceData);
         
-        if (priceData['fuel-network']) {
-          const price = priceData['fuel-network'].usd;
-          setDetails({
-            market_data: {
-              current_price: {
-                usd: price
+        if (mounted) {
+          if (priceData['fuel-network']) {
+            const price = priceData['fuel-network'].usd;
+            setDetails({
+              market_data: {
+                current_price: {
+                  usd: price
+                }
               }
-            }
-          });
+            });
 
-          // Check price alerts
-          if (token.id) {
-            const triggeredAlerts = checkAlerts(token.id, price);
-            triggeredAlerts.forEach(alert => {
-              toast.success(`Price Alert: ${token.name} is ${alert.type} $${alert.price}`, {
-                description: `Current price: $${price}`,
-                duration: 10000,
+            if (token.id) {
+              const triggeredAlerts = checkAlerts(token.id, price);
+              triggeredAlerts.forEach(alert => {
+                toast.success(`Price Alert: ${token.name} is ${alert.type} $${alert.price}`, {
+                  description: `Current price: $${price}`,
+                  duration: 10000,
+                });
               });
+            }
+          }
+          
+          setRetryCount(0);
+        }
+      } catch (error) {
+        if (mounted) {
+          console.error('Error fetching data:', error);
+          setError(error instanceof Error ? error.message : 'Failed to fetch data');
+          
+          if (!details) {
+            setDetails({
+              market_data: {
+                current_price: {
+                  usd: 0.04 // Fallback price
+                }
+              }
             });
           }
-        } else {
-          // Handle case when fuel-network price is not in the response
-          console.warn('No price data found for fuel-network');
-          setDetails({
-            market_data: {
-              current_price: {
-                usd: 0.04 // Fallback price
+          
+          if (retryCount < 3) {
+            const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+            setTimeout(() => {
+              if (mounted) {
+                setRetryCount(prev => prev + 1);
               }
-            }
-          });
-        }
-        
-        setRetryCount(0);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setError(error instanceof Error ? error.message : 'Failed to fetch data');
-        
-        // Always set fallback data even on error
-        setDetails({
-          market_data: {
-            current_price: {
-              usd: 0.04 // Fallback price
-            }
+            }, delay);
           }
-        });
-        
-        if (retryCount < 3) {
-          const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
-          setTimeout(() => {
-            setRetryCount(prev => prev + 1);
-          }, delay);
         }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchDetails();
-    const interval = setInterval(fetchDetails, 60000); // Refresh every minute
-    return () => clearInterval(interval);
-  }, [token, navigate, retryCount, checkAlerts, id]);
+    intervalId = setInterval(fetchDetails, 60000); // Refresh every minute
 
-  // Add early return with loading state
-  if (loading) {
-    return (
-      <div className="max-w-4xl mx-auto p-4 md:p-6">
-        <div className="animate-pulse space-y-8">
-          <div className="h-8 bg-cyan-500/20 rounded w-1/3"></div>
-          <div className="h-8 bg-cyan-500/20 rounded w-1/2"></div>
-          <div className="h-8 bg-cyan-500/20 rounded w-2/3"></div>
-        </div>
-      </div>
-    );
-  }
+    return () => {
+      mounted = false;
+      clearInterval(intervalId);
+    };
+  }, [token, navigate, retryCount, checkAlerts]);
 
-  // Add error boundary
   if (!token) {
-    console.log('No token found in render');
     return (
       <div className="max-w-4xl mx-auto p-4 md:p-6">
         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
@@ -134,6 +117,7 @@ export function TokenDetails() {
     );
   }
 
+  const currentPrice = details?.market_data.current_price.usd || null;
   const currentROI = currentPrice 
     ? calculateROI(token, { [token.id]: { usd: currentPrice } })
     : null;
@@ -172,61 +156,69 @@ export function TokenDetails() {
             </div>
           )}
 
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {token.status === 'live' && (
+          {loading ? (
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-cyan-500/20 rounded w-1/3"></div>
+              <div className="h-8 bg-cyan-500/20 rounded w-1/2"></div>
+              <div className="h-8 bg-cyan-500/20 rounded w-2/3"></div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {token.status === 'live' && (
+                  <div className="bg-black/20 p-6 rounded-lg border border-cyan-500/10">
+                    <h2 className="text-xl font-semibold text-pink-500 mb-4">Investment Details</h2>
+                    <div className="space-y-2">
+                      <p>Buy Price: <span className="text-cyan-300">${token.buyPrice}</span></p>
+                      {currentPrice && (
+                        <p>Current Price: <span className="text-cyan-300">${currentPrice.toFixed(6)}</span></p>
+                      )}
+                      {currentROI && (
+                        <p>Current ROI: <span className={currentROI >= 100 ? 'text-green-400' : 'text-pink-500'}>
+                          {formatROI(currentROI)}
+                        </span></p>
+                      )}
+                      {token.unlockPrice && (
+                        <p>Unlock Price: <span className="text-cyan-300">${token.unlockPrice}</span></p>
+                      )}
+                      {token.highestPrice && (
+                        <p>ATH Price: <span className="text-cyan-300">${token.highestPrice}</span></p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-black/20 p-6 rounded-lg border border-cyan-500/10">
-                  <h2 className="text-xl font-semibold text-pink-500 mb-4">Investment Details</h2>
+                  <h2 className="text-xl font-semibold text-pink-500 mb-4">Links</h2>
                   <div className="space-y-2">
-                    <p>Buy Price: <span className="text-cyan-300">${token.buyPrice}</span></p>
-                    {currentPrice && (
-                      <p>Current Price: <span className="text-cyan-300">${currentPrice.toFixed(6)}</span></p>
+                    {token.links?.website && (
+                      <p><a href={token.links.website} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-pink-400">Website</a></p>
                     )}
-                    {currentROI && (
-                      <p>Current ROI: <span className={currentROI >= 100 ? 'text-green-400' : 'text-pink-500'}>
-                        {formatROI(currentROI)}
-                      </span></p>
-                    )}
-                    {token.unlockPrice && (
-                      <p>Unlock Price: <span className="text-cyan-300">${token.unlockPrice}</span></p>
-                    )}
-                    {token.highestPrice && (
-                      <p>ATH Price: <span className="text-cyan-300">${token.highestPrice}</span></p>
+                    {token.links?.twitter && (
+                      <p><a href={token.links.twitter} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-pink-400">Twitter</a></p>
                     )}
                   </div>
                 </div>
+              </div>
+
+              {token.status === 'live' && (
+                <>
+                  <PriceChart tokenId={token.id} currentPrice={currentPrice} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <InvestmentCalculator currentPrice={currentPrice} />
+                    <PriceAlerts tokenId={token.id} currentPrice={currentPrice} />
+                  </div>
+                </>
               )}
 
-              <div className="bg-black/20 p-6 rounded-lg border border-cyan-500/10">
-                <h2 className="text-xl font-semibold text-pink-500 mb-4">Links</h2>
-                <div className="space-y-2">
-                  {token.links?.website && (
-                    <p><a href={token.links.website} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-pink-400">Website</a></p>
-                  )}
-                  {token.links?.twitter && (
-                    <p><a href={token.links.twitter} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-pink-400">Twitter</a></p>
-                  )}
+              {token.about && (
+                <div className="bg-black/20 p-6 rounded-lg border border-cyan-500/10">
+                  <h2 className="text-xl font-semibold text-pink-500 mb-4">About {token.name}</h2>
+                  <p className="text-cyan-100 leading-relaxed">{token.about}</p>
                 </div>
-              </div>
+              )}
             </div>
-
-            {token.status === 'live' && (
-              <>
-                <PriceChart tokenId={token.id} currentPrice={currentPrice} />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <InvestmentCalculator currentPrice={currentPrice} />
-                  <PriceAlerts tokenId={token.id} currentPrice={currentPrice} />
-                </div>
-              </>
-            )}
-
-            {token.about && (
-              <div className="bg-black/20 p-6 rounded-lg border border-cyan-500/10">
-                <h2 className="text-xl font-semibold text-pink-500 mb-4">About {token.name}</h2>
-                <p className="text-cyan-100 leading-relaxed">{token.about}</p>
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
         {token.status === 'live' && (
