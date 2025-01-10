@@ -27,6 +27,7 @@ export default function App() {
                 </div>
               } />
               <Route path="/token/:id" element={<TokenDetails />} />
+              <Route path="*" element={<TokenDetails />} />
             </Routes>
           </main>
 
