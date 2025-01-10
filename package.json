@@ -6,14 +6,10 @@
   "homepage": "https://thelegion.club",
   "scripts": {
     "dev": "vite",
-    "build": "NODE_OPTIONS='--max-old-space-size=512' tsc && vite build react-scripts test",
+    "build": "tsc && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "react-scripts start",
-    "test": "react-scripts build",
-    "deploy": "gh-pages -d build",
-    "predeploy": "npm run build",
-    "eject": "react-scripts eject"
+    "deploy": "npm run build && gh-pages -d dist"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.7",
@@ -39,6 +35,6 @@
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.2.2",
-    "vite": "^5.4.11"
+    "vite": "^5.1.0"
   }
 }
